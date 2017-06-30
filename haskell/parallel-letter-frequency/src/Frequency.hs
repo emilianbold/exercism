@@ -1,6 +1,6 @@
 module Frequency (frequency) where
 
-import Control.Parallel (par)
+import Control.Parallel.Strategies (parMap, rpar)
 import Data.Char (toLower, isAlpha)
 import Data.Map  (Map, empty, insertWith, unionWith)
 import Data.Text (Text)
@@ -24,12 +24,7 @@ unionAll = foldr (unionWith (+)) empty
 
 frequency :: Int -> [Text] -> Map Char Int
 frequency nWorkers texts =
-    mapPar [] $ chunksOf workload texts
+    unionAll $ parMap rpar countTexts $ chunksOf workload texts
     where   (d, m)      = (length texts) `divMod` nWorkers 
             workload    = if m == 0 then d else d + 1 
-
-mapPar :: [Map Char Int] -> [[Text]] -> Map Char Int
-mapPar results [] = unionAll results
-mapPar results (x:xs) = par evalX $ mapPar (evalX:results) xs
-                        where evalX = countTexts x
 
